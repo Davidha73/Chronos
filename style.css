@@ -41,6 +41,11 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html,
+body {
+  overscroll-behavior: none;
+}
+
 body {
   font-family:
     "Inter",
@@ -219,6 +224,16 @@ body {
   text-anchor: middle;
 }
 
+.ring-text-label {
+  font-size: 4px;
+  font-weight: 700;
+  fill: rgba(255, 255, 255, 0.08); /* faint white overlay */
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  pointer-events: none;
+  user-select: none;
+}
+
 .arc-segment {
   fill: none;
   stroke-linecap: round;
@@ -381,6 +396,8 @@ body {
   flex: 1;
   padding: 0 20px;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
 }
@@ -664,7 +681,7 @@ body {
 .supp-tag {
   font-size: 10px;
   font-weight: 600;
-  padding: 4px 8px;
+  padding: 0 0 0 8px;
   min-height: 28px; /* Optimized mobile padding sizes */
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.05);
@@ -673,6 +690,36 @@ body {
   align-items: center;
   gap: 4px;
   cursor: pointer;
+  overflow: hidden; /* Contain hover effects inside border radius */
+}
+
+.tag-edit-btn {
+  background: none;
+  border: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  color: inherit;
+  opacity: 0.5;
+  cursor: pointer;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  transition: opacity 0.2s, background-color 0.2s, transform 0.1s;
+  margin-left: 4px;
+}
+
+.tag-edit-btn:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.tag-edit-btn:active {
+  transform: scale(0.95);
+}
+
+.tag-edit-btn .material-symbols-outlined {
+  font-size: 14px !important;
 }
 
 .tag-muscle {
@@ -782,6 +829,8 @@ body {
 .side-menu-body {
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 12px 20px calc(24px + var(--safe-bottom)) 20px;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -1035,6 +1084,8 @@ body {
 
 .sheet-body {
   overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -1126,6 +1177,7 @@ body {
   border-top: 1px solid #2c2c2e !important;
   z-index: 200;
   max-height: 320px;
+  overflow: hidden !important;
 }
 
 .picker-header-btn {
@@ -1152,7 +1204,8 @@ body {
 .ios-picker-body {
   padding: 10px 0 20px 0;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
 }
 
 .picker-wheel-container {
@@ -1162,20 +1215,30 @@ body {
   max-width: 320px;
   height: 200px;
   background-color: #1c1c1e;
-  mask-image: linear-gradient(
-    to bottom,
-    transparent,
-    white 20%,
-    white 80%,
-    transparent
-  );
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent,
-    white 20%,
-    white 80%,
-    transparent
-  );
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+/* Gradient overlays to fade out top and bottom spinner items (iOS-compatible) */
+.picker-wheel-container::before,
+.picker-wheel-container::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 48px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.picker-wheel-container::before {
+  top: 0;
+  background: linear-gradient(to bottom, #1c1c1e 30%, rgba(28, 28, 30, 0) 100%);
+}
+
+.picker-wheel-container::after {
+  bottom: 0;
+  background: linear-gradient(to top, #1c1c1e 30%, rgba(28, 28, 30, 0) 100%);
 }
 
 .picker-selection-highlight {
@@ -1196,22 +1259,36 @@ body {
   flex-direction: column;
   align-items: center;
   position: relative;
+  overflow: hidden;
+}
+
+.picker-labels-header {
+  display: flex;
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
 }
 
 .picker-column-label {
+  flex: 1;
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   text-transform: uppercase;
   font-weight: 700;
   letter-spacing: 0.05em;
-  margin-bottom: 8px;
   pointer-events: none;
+  text-align: center;
 }
 
 .picker-column {
   width: 100%;
   height: 200px;
   overflow-y: scroll;
+  overflow-x: hidden;
+  touch-action: pan-y;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
   scroll-snap-type: y mandatory;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -1222,6 +1299,11 @@ body {
 }
 
 .picker-item {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  white-space: nowrap;
   height: 40px;
   line-height: 40px;
   text-align: center;
@@ -1235,6 +1317,10 @@ body {
 }
 
 .picker-item-empty {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
   height: 40px;
   pointer-events: none;
 }
@@ -1507,22 +1593,26 @@ input:checked + .slider:before {
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 4px;
+  padding: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  margin-left: 8px;
+  border-radius: 50%;
+  transition: all 0.2s ease, transform 0.1s;
+  margin-left: 4px;
 }
 
 .supp-item-edit-btn:hover {
-  background-color: var(--border-focus);
+  background-color: rgba(255, 255, 255, 0.08);
   color: var(--text);
 }
 
+.supp-item-edit-btn:active {
+  transform: scale(0.92);
+}
+
 .supp-item-edit-btn .material-symbols-outlined {
-  font-size: 16px;
+  font-size: 20px;
 }
 
 /* Clock Guide Button & Bottom Sheet Styles */
@@ -1707,4 +1797,87 @@ input:checked + .slider:before {
 
 .meal-delete-btn .material-symbols-outlined {
   font-size: 20px;
+}
+
+/* Copy Stack Action Panel Styles */
+.copy-actions-container {
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+
+.copy-label {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.copy-inputs-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dropdown-styled {
+  flex: 1;
+  background-color: #121214;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 500;
+  height: 34px;
+  padding: 0 8px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.dropdown-styled:focus {
+  border-color: var(--border-focus);
+}
+
+.btn-copy-small {
+  height: 34px;
+  padding: 0 16px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+}
+
+/* Supplement Drawer Day-Type Badge */
+.supp-sheet-day-badge-row {
+  padding: 0 20px 10px;
+}
+
+.supp-day-type-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.supp-day-type-badge.badge-training {
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+  background-color: rgba(34, 197, 94, 0.07);
+}
+
+.supp-day-type-badge.badge-rest {
+  color: #818cf8;
+  border-color: rgba(129, 140, 248, 0.3);
+  background-color: rgba(129, 140, 248, 0.07);
 }

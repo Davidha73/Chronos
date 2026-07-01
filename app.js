@@ -290,6 +290,24 @@ let appState = {
   dayType: "training",
   weeklySchedule: [false, false, false, false, false, false, false], // Sun-Sat (false=rest, true=training)
   schedule: JSON.parse(JSON.stringify(DEFAULTS)),
+  weeklySupplements: {
+    0: ["creatine", "omega3", "t_booster", "whey", "electrolytes", "zma", "casein"],
+    1: ["creatine", "omega3", "t_booster", "whey", "electrolytes", "zma", "casein"],
+    2: ["creatine", "omega3", "t_booster", "whey", "electrolytes", "zma", "casein"],
+    3: ["creatine", "omega3", "t_booster", "whey", "electrolytes", "zma", "casein"],
+    4: ["creatine", "omega3", "t_booster", "whey", "electrolytes", "zma", "casein"],
+    5: ["creatine", "omega3", "t_booster", "whey", "electrolytes", "zma", "casein"],
+    6: ["creatine", "omega3", "t_booster", "whey", "electrolytes", "zma", "casein"]
+  },
+  weeklyOverrides: {
+    0: {},
+    1: {},
+    2: {},
+    3: {},
+    4: {},
+    5: {},
+    6: {}
+  },
   supplements: {
     training: [
       "creatine",
@@ -449,6 +467,35 @@ async function loadState() {
         appState.supplements = parsed.supplements;
       }
 
+      // Load or migrate to weekly day-of-the-week supplements & overrides
+      if (parsed && parsed.weeklySupplements) {
+        appState.weeklySupplements = parsed.weeklySupplements;
+      } else {
+        const initialWeeklySupplements = {};
+        for (let i = 0; i < 7; i++) {
+          const isTraining = appState.weeklySchedule[i];
+          const sourceList = (parsed && parsed.supplements)
+            ? (isTraining ? parsed.supplements.training : parsed.supplements.rest)
+            : (isTraining ? appState.supplements.training : appState.supplements.rest);
+          initialWeeklySupplements[i] = [...(sourceList || [])];
+        }
+        appState.weeklySupplements = initialWeeklySupplements;
+      }
+
+      if (parsed && parsed.weeklyOverrides) {
+        appState.weeklyOverrides = parsed.weeklyOverrides;
+      } else {
+        const initialWeeklyOverrides = {};
+        for (let i = 0; i < 7; i++) {
+          const isTraining = appState.weeklySchedule[i];
+          const sourceOverrides = (parsed && parsed.overrides)
+            ? (isTraining ? parsed.overrides.training : parsed.overrides.rest)
+            : (isTraining ? appState.overrides.training : appState.overrides.rest);
+          initialWeeklyOverrides[i] = JSON.parse(JSON.stringify(sourceOverrides || {}));
+        }
+        appState.weeklyOverrides = initialWeeklyOverrides;
+      }
+
       if (parsed && parsed.hasOwnProperty("highProteinDinnerRest")) {
         appState.highProteinDinnerRest = parsed.highProteinDinnerRest;
       }
@@ -547,7 +594,9 @@ function calculateOptimalTimes(userAnchors, userStack, settings = {}) {
   let scheduledSupplements = [];
   
   const dayType = userAnchors.isRestDay ? "rest" : "training";
-  const overrides = appState.overrides?.[dayType] || {};
+  const overrides = (settings.dayOfWeek !== undefined)
+    ? (appState.weeklyOverrides[settings.dayOfWeek] || {})
+    : (appState.overrides?.[dayType] || {});
 
   userStack.forEach(suppId => {
     const supp = SUPPLEMENT_DB[suppId];
@@ -848,12 +897,12 @@ function renderClockSegments(scheduledSupps, userAnchors) {
   if (dayType === "training" && sched.workoutStart && sched.workoutEnd) {
     const workStart = timeToHours(sched.workoutStart);
     const workEnd = timeToHours(sched.workoutEnd);
-    const pathData = describeArcPath(100, 100, 76, workStart, workEnd);
+    const pathData = describeArcPath(100, 100, 85, workStart, workEnd);
 
     workoutArc.setAttribute("d", pathData);
-    workoutArc.setAttribute("stroke-width", "5");
+    workoutArc.setAttribute("stroke-width", "6");
     workoutArcBg.setAttribute("d", pathData);
-    workoutArcBg.setAttribute("stroke-width", "5");
+    workoutArcBg.setAttribute("stroke-width", "6");
     workoutArc.style.display = "block";
     workoutArcBg.style.display = "block";
   } else {
@@ -861,7 +910,7 @@ function renderClockSegments(scheduledSupps, userAnchors) {
     workoutArcBg.style.display = "none";
   }
 
-  // 3. Meal Anchors (Breakfast, Lunch, Dinner - green diamonds on Health Track r=50)
+  // 3. Meal Anchors (Breakfast, Lunch, Dinner - green diamonds on r=42)
   const mealGroup = document.getElementById("meal-markers");
   mealGroup.innerHTML = "";
 
@@ -882,7 +931,7 @@ function renderClockSegments(scheduledSupps, userAnchors) {
   meals.forEach((m) => {
     if (!m.time) return;
     const hr = timeToHours(m.time);
-    const pt = polarToCartesian(100, 100, 50, hr * 15);
+    const pt = polarToCartesian(100, 100, 42, hr * 15);
 
     const diamond = document.createElementNS(
       "http://www.w3.org/2000/svg",
@@ -913,17 +962,17 @@ function renderClockSegments(scheduledSupps, userAnchors) {
   suppGroup.innerHTML = "";
 
   scheduledSupps.forEach((item) => {
-    let r = 50; // default health
+    let r = 58; // default health
     let color = item.color || "var(--cat-health)";
 
     if (item.category === "muscle") {
-      r = 66;
+      r = 74;
     } else if (item.category === "performance") {
-      r = 58;
+      r = 66;
     } else if (item.category === "health") {
-      r = 50;
+      r = 58;
     } else if (item.category === "sleep") {
-      r = 42;
+      r = 50;
     }
 
     let opacity = 1;
@@ -1247,6 +1296,9 @@ function renderTimeline(scheduledSupps, userAnchors) {
           return `
         <span class="supp-tag tag-${suppItem.category} ${tagWarnClass}" onclick="event.stopPropagation(); highlightClockSegment('${suppItem.id}')">
           ${suppItem.name} (${suppItem.dose || suppItem.unit})${warningText ? ` <span style="font-size: 8px; font-weight:700;">${warningText}</span>` : ""}
+          <button class="tag-edit-btn" onclick="event.stopPropagation(); openAdjustSupplementDrawer('${suppItem.id}')" title="Edit timing/dosage">
+            <span class="material-symbols-outlined">edit</span>
+          </button>
         </span>
       `;
         })
@@ -1454,10 +1506,23 @@ function resetViewDate() {
 
 // Manage Supplement Drawer logic
 function openSupplementsDrawer(resetContext = true) {
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const viewDate = new Date();
+  viewDate.setDate(viewDate.getDate() + appState.viewDateOffset);
+  const dayOfWeek = viewDate.getDay();
+
   if (resetContext) {
-    menuContext = appState.dayType;
+    menuContext = dayOfWeek; // menuContext stores the viewed dayOfWeek index (0-6)
   }
-  updateContextToggles();
+
+  // Update Drawer Title and day-type badge
+  document.getElementById("supplements-sheet-title").textContent = `Manage ${dayNames[menuContext]} Stack`;
+  const isTrainingDay = appState.weeklySchedule[menuContext];
+  const badge = document.getElementById("supp-day-type-badge");
+  badge.textContent = isTrainingDay ? "Training Day" : "Rest Day";
+  badge.className = `supp-day-type-badge ${isTrainingDay ? "badge-training" : "badge-rest"}`;
+
+  updateCopyOptionsDropdown();
 
   const overlay = document.getElementById("sheet-overlay");
   const sheet = document.getElementById("supplements-sheet");
@@ -1488,19 +1553,19 @@ function openSupplementsDrawer(resetContext = true) {
       const supp = SUPPLEMENT_DB[id];
       if (supp.category !== catKey) return;
 
-      const activeList = appState.supplements[menuContext] || [];
+      const activeList = appState.weeklySupplements[menuContext] || [];
       const isActive = activeList.includes(id);
 
       const item = document.createElement("div");
       item.className = "supp-list-item";
 
-      const customDose = (isActive && appState.overrides?.[menuContext]?.[id]?.dose)
-        ? appState.overrides[menuContext][id].dose
+      const customDose = (isActive && appState.weeklyOverrides?.[menuContext]?.[id]?.dose)
+        ? appState.weeklyOverrides[menuContext][id].dose
         : supp.unit;
 
       const editButtonHtml = isActive ? `
         <button class="supp-item-edit-btn" data-id="${id}" title="Adjust dose/timing">
-          <span class="material-symbols-outlined">tune</span>
+          <span class="material-symbols-outlined">edit</span>
         </button>
       ` : "";
 
@@ -1535,13 +1600,13 @@ function openSupplementsDrawer(resetContext = true) {
 
       item.querySelector("input").addEventListener("change", (e) => {
         const suppId = e.target.getAttribute("data-id");
-        const list = appState.supplements[menuContext] || [];
+        const list = appState.weeklySupplements[menuContext] || [];
         if (e.target.checked) {
           if (!list.includes(suppId)) {
             list.push(suppId);
           }
         } else {
-          appState.supplements[menuContext] = list.filter(
+          appState.weeklySupplements[menuContext] = list.filter(
             (x) => x !== suppId,
           );
         }
@@ -1558,6 +1623,31 @@ function openSupplementsDrawer(resetContext = true) {
 
   overlay.classList.add("active");
   sheet.classList.add("active");
+}
+
+function updateCopyOptionsDropdown() {
+  const select = document.getElementById("copy-from-day-select");
+  select.innerHTML = '<option value="">Select day...</option>';
+
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+  let hasOptions = false;
+  for (let i = 0; i < 7; i++) {
+    if (i === menuContext) continue; // skip current day
+    // Only show days that have been configured (have at least one supplement)
+    const dayStack = appState.weeklySupplements[i] || [];
+    if (dayStack.length > 0) {
+      const isTraining = appState.weeklySchedule[i];
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = `${dayNames[i]} (${isTraining ? "Training" : "Rest"})`;
+      select.appendChild(opt);
+      hasOptions = true;
+    }
+  }
+
+  const copyContainer = document.getElementById("supplements-copy-container");
+  copyContainer.style.display = hasOptions ? "block" : "none";
 }
 
 function closeSupplementsDrawer() {
@@ -1582,11 +1672,15 @@ function openAdjustSupplementDrawer(suppId) {
   const supp = SUPPLEMENT_DB[suppId];
   if (!supp) return;
 
-  const overrides = appState.overrides?.[menuContext] || {};
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const isTraining = appState.weeklySchedule[menuContext];
+  const dayType = isTraining ? "training" : "rest";
+
+  const overrides = appState.weeklyOverrides?.[menuContext] || {};
   const override = overrides[suppId];
   
   document.getElementById("adjust-supp-title").textContent = `Adjust ${supp.name}`;
-  document.getElementById("adjust-supp-subtitle").textContent = `${supp.name} Settings (${menuContext === "training" ? "Training" : "Rest"} Day)`;
+  document.getElementById("adjust-supp-subtitle").textContent = `${supp.name} Settings (${dayNames[menuContext]} - ${isTraining ? "Training" : "Rest"})`;
 
   const doseInput = document.getElementById("adjust-supp-dose");
   doseInput.value = (override && override.dose) ? override.dose : supp.unit;
@@ -1594,9 +1688,9 @@ function openAdjustSupplementDrawer(suppId) {
   const timeInput = document.getElementById("adjust-supp-time");
   
   // Calculate default suggested time to display as info
-  const currentSched = appState.schedule[menuContext];
+  const currentSched = appState.schedule[dayType];
   const userAnchors = {
-    isRestDay: menuContext === "rest",
+    isRestDay: !isTraining,
     meals: {
       breakfast: timeStringToMinutes(currentSched.breakfast),
       lunch: timeStringToMinutes(currentSched.lunch),
@@ -1613,18 +1707,18 @@ function openAdjustSupplementDrawer(suppId) {
   };
   const settings = {
     splitBetaAlanine: appState.splitBetaAlanine,
-    ashwagandhaGoal: appState.ashwagandhaGoal
+    ashwagandhaGoal: appState.ashwagandhaGoal,
+    dayOfWeek: menuContext
   };
   
   // Save overrides temporarily to compute the normal timing
-  const originalOverrides = appState.overrides;
-  const tempOverrides = JSON.parse(JSON.stringify(appState.overrides || { training: {}, rest: {} }));
-  if (tempOverrides[menuContext]) {
-    delete tempOverrides[menuContext][suppId];
-  }
-  appState.overrides = tempOverrides;
+  const originalWeeklyOverrides = appState.weeklyOverrides[menuContext];
+  const tempWeeklyOverrides = JSON.parse(JSON.stringify(appState.weeklyOverrides[menuContext] || {}));
+  delete tempWeeklyOverrides[suppId];
+  
+  appState.weeklyOverrides[menuContext] = tempWeeklyOverrides;
   const tempScheduled = calculateOptimalTimes(userAnchors, [suppId], settings);
-  appState.overrides = originalOverrides;
+  appState.weeklyOverrides[menuContext] = originalWeeklyOverrides;
 
   let defaultTimeStr = "12:00";
   if (tempScheduled.length > 0) {
@@ -1669,7 +1763,7 @@ function updateAdjustSuppClashPreview(suppId) {
   const customDose = document.getElementById("adjust-supp-dose").value;
   const previewDiv = document.getElementById("adjust-supp-clash-preview");
 
-  const tempOverrides = JSON.parse(JSON.stringify(appState.overrides || { training: {}, rest: {} }));
+  const tempOverrides = JSON.parse(JSON.stringify(appState.weeklyOverrides || { 0: {}, 1: {}, 2: {}, 3: {}, 4: {}, 5: {}, 6: {} }));
   
   if (!tempOverrides[menuContext]) {
     tempOverrides[menuContext] = {};
@@ -1698,17 +1792,22 @@ function updateAdjustSuppClashPreview(suppId) {
     }
   };
 
+  const viewDate = new Date();
+  viewDate.setDate(viewDate.getDate() + appState.viewDateOffset);
+  const dayOfWeek = viewDate.getDay();
+
   const settings = {
     splitBetaAlanine: appState.splitBetaAlanine,
-    ashwagandhaGoal: appState.ashwagandhaGoal
+    ashwagandhaGoal: appState.ashwagandhaGoal,
+    dayOfWeek: dayOfWeek
   };
 
-  const originalOverrides = appState.overrides;
-  appState.overrides = tempOverrides;
+  const originalWeeklyOverrides = appState.weeklyOverrides[dayOfWeek];
+  appState.weeklyOverrides[dayOfWeek] = tempOverrides[dayOfWeek];
   
-  const tempScheduled = calculateOptimalTimes(userAnchors, appState.supplements[appState.dayType], settings);
+  const tempScheduled = calculateOptimalTimes(userAnchors, appState.weeklySupplements[dayOfWeek], settings);
   
-  appState.overrides = originalOverrides;
+  appState.weeklyOverrides[dayOfWeek] = originalWeeklyOverrides;
 
   const targetId = suppId;
   const relevantWarnings = [];
@@ -1894,12 +1993,17 @@ function renderAll() {
     });
   }
 
+  const viewDate = new Date();
+  viewDate.setDate(viewDate.getDate() + appState.viewDateOffset);
+  const dayOfWeek = viewDate.getDay();
+
   const settings = {
     splitBetaAlanine: appState.splitBetaAlanine,
-    ashwagandhaGoal: appState.ashwagandhaGoal
+    ashwagandhaGoal: appState.ashwagandhaGoal,
+    dayOfWeek: dayOfWeek
   };
 
-  const scheduledSupps = calculateOptimalTimes(userAnchors, appState.supplements[appState.dayType], settings);
+  const scheduledSupps = calculateOptimalTimes(userAnchors, appState.weeklySupplements[dayOfWeek], settings);
 
   renderClockSegments(scheduledSupps, userAnchors);
   renderTimeline(scheduledSupps, userAnchors);
@@ -2292,6 +2396,26 @@ async function initApp() {
   document
     .getElementById("btn-close-supp-save")
     .addEventListener("click", closeSupplementsDrawer);
+
+  // Copy day stack button
+  document.getElementById("btn-copy-day-stack").addEventListener("click", () => {
+    const select = document.getElementById("copy-from-day-select");
+    const fromDay = parseInt(select.value);
+    if (isNaN(fromDay)) return;
+
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const fromName = dayNames[fromDay];
+    const toName = dayNames[menuContext];
+
+    if (!confirm(`Copy ${fromName}'s supplement stack to ${toName}? This will replace ${toName}'s current stack.`)) return;
+
+    appState.weeklySupplements[menuContext] = JSON.parse(JSON.stringify(appState.weeklySupplements[fromDay] || []));
+    appState.weeklyOverrides[menuContext] = JSON.parse(JSON.stringify(appState.weeklyOverrides[fromDay] || {}));
+
+    saveState();
+    renderAll();
+    openSupplementsDrawer(false);
+  });
   document
     .getElementById("close-adjust-supp-btn")
     .addEventListener("click", closeAdjustSupplementDrawer);
@@ -2423,14 +2547,14 @@ async function initApp() {
     const customDose = document.getElementById("adjust-supp-dose").value.trim();
     const customTime = document.getElementById("adjust-supp-time").value;
 
-    if (!appState.overrides) {
-      appState.overrides = { training: {}, rest: {} };
+    if (!appState.weeklyOverrides) {
+      appState.weeklyOverrides = { 0: {}, 1: {}, 2: {}, 3: {}, 4: {}, 5: {}, 6: {} };
     }
-    if (!appState.overrides[menuContext]) {
-      appState.overrides[menuContext] = {};
+    if (!appState.weeklyOverrides[menuContext]) {
+      appState.weeklyOverrides[menuContext] = {};
     }
 
-    appState.overrides[menuContext][activeAdjustSuppId] = {
+    appState.weeklyOverrides[menuContext][activeAdjustSuppId] = {
       dose: customDose,
       time: isManual ? customTime : null
     };
@@ -2447,8 +2571,8 @@ async function initApp() {
   document.getElementById("adjust-supp-reset-btn").addEventListener("click", () => {
     if (!activeAdjustSuppId) return;
 
-    if (appState.overrides?.[menuContext]?.[activeAdjustSuppId]) {
-      delete appState.overrides[menuContext][activeAdjustSuppId];
+    if (appState.weeklyOverrides?.[menuContext]?.[activeAdjustSuppId]) {
+      delete appState.weeklyOverrides[menuContext][activeAdjustSuppId];
     }
 
     saveState();

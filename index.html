@@ -55,18 +55,30 @@
       <main class="clock-section">
         <div class="clock-wrapper">
           <svg id="clock-face" viewBox="0 0 200 200">
+            <defs>
+              <!-- Clockwise paths starting at 03:00 (45 degrees) for curved labels -->
+              <path id="meal-text-path" d="M 129.7 70.3 A 42 42 0 0 1 142 100" fill="none" />
+              <path id="supp-text-path" d="M 143.8 56.2 A 62 62 0 0 1 162 100" fill="none" />
+            </defs>
+
             <!-- Outer circle face background -->
             <circle cx="100" cy="100" r="92" class="clock-bg-ring" />
 
             <!-- Category dashed concentric lines -->
-            <circle cx="100" cy="100" r="66" class="track-line" />
+            <circle cx="100" cy="100" r="74" class="track-line" />
             <!-- Muscle Track -->
-            <circle cx="100" cy="100" r="58" class="track-line" />
+            <circle cx="100" cy="100" r="66" class="track-line" />
             <!-- Performance Track -->
-            <circle cx="100" cy="100" r="50" class="track-line" />
+            <circle cx="100" cy="100" r="58" class="track-line" />
             <!-- Health Track -->
-            <circle cx="100" cy="100" r="42" class="track-line" />
+            <circle cx="100" cy="100" r="50" class="track-line" />
             <!-- Sleep Track -->
+            <circle cx="100" cy="100" r="42" class="track-line" />
+            <!-- Meal Track -->
+
+            <!-- Faint curved text labels -->
+            <text class="ring-text-label"><textPath href="#meal-text-path" startOffset="5%">Meals</textPath></text>
+            <text class="ring-text-label"><textPath href="#supp-text-path" startOffset="5%">Supplements</textPath></text>
 
             <!-- Arc backgrounds for visual depth -->
             <path id="sleep-arc-bg" class="sleep-segment-bg" />
@@ -353,19 +365,27 @@
       <!-- Supplements stack drawer -->
       <div id="supplements-sheet" class="side-menu">
         <div class="side-menu-header">
-          <h2>Manage Supplement Stack</h2>
+          <h2 id="supplements-sheet-title">Manage Supplement Stack</h2>
           <button id="close-supplements-btn" class="close-btn">
             <span class="material-symbols-outlined">chevron_right</span>
           </button>
         </div>
-        <div class="context-toggle-wrapper">
-          <div class="context-toggle" id="supplements-context-toggle">
-            <button class="context-btn active" data-context="training">Training Day</button>
-            <button class="context-btn" data-context="rest">Rest Day</button>
-          </div>
+        <div class="supp-sheet-day-badge-row">
+          <span id="supp-day-type-badge" class="supp-day-type-badge">Training Day</span>
         </div>
 
         <div class="side-menu-body">
+          <!-- Copy Day Stack Options -->
+          <div id="supplements-copy-container" class="copy-actions-container">
+            <span class="copy-label">Duplicate Stack</span>
+            <div class="copy-inputs-row">
+              <select id="copy-from-day-select" class="dropdown-styled">
+                <option value="">Select day...</option>
+              </select>
+              <button type="button" id="btn-copy-day-stack" class="btn btn-secondary btn-copy-small">Copy</button>
+            </div>
+          </div>
+
           <div id="supplements-list-container">
             <!-- Rendered dynamically grouped by category -->
           </div>
@@ -432,18 +452,20 @@
           </button>
         </div>
         <div class="ios-picker-body">
+          <div class="picker-labels-header">
+            <div class="picker-column-label">Hour</div>
+            <div class="picker-column-label">Min</div>
+          </div>
           <div class="picker-wheel-container">
             <div class="picker-selection-highlight"></div>
 
             <!-- Hour Column -->
             <div class="picker-column-wrapper">
-              <div class="picker-column-label">Hour</div>
               <div id="hour-wheel" class="picker-column"></div>
             </div>
 
             <!-- Minute Column -->
             <div class="picker-column-wrapper">
-              <div class="picker-column-label">Min</div>
               <div id="minute-wheel" class="picker-column"></div>
             </div>
           </div>
@@ -476,7 +498,7 @@
             </div>
             <div class="guide-text">
               <span class="guide-title">Workout Window (Orange Bar)</span>
-              <span class="guide-desc">The orange arc on the second rim represents your training session (only shown on Training Days). Helps anchor pre- and post-workout supplement timing.</span>
+              <span class="guide-desc">The orange arc on the outer rim (same as Sleep) represents your training session (only shown on Training Days). Helps anchor pre- and post-workout supplement timing.</span>
             </div>
           </div>
           
@@ -486,7 +508,7 @@
             </div>
             <div class="guide-text">
               <span class="guide-title">Meal Anchors (Green Diamonds)</span>
-              <span class="guide-desc">Represent Breakfast, Lunch, and Dinner. These act as circadian anchors to automatically align supplement intake.</span>
+              <span class="guide-desc">Represent Breakfast, Lunch, and Dinner, located on the innermost category track. These act as circadian anchors to automatically align supplement intake.</span>
             </div>
           </div>
           
@@ -506,11 +528,11 @@
             </div>
             <div class="guide-text">
               <span class="guide-title">Supplement Indicators (Colored Circles)</span>
-              <span class="guide-desc">Circles mark scheduled supplements, situated on concentric category tracks:
-                <br>• <strong>Muscle (Light Blue):</strong> Creatine, Whey, Casein, EAAs
-                <br>• <strong>Performance (Purple):</strong> Caffeine, Beta-Alanine, Citrulline, Alpha-GPC, Tyrosine, Electrolytes
-                <br>• <strong>Health (Green):</strong> Omega-3, Vit D3+K2, Multivitamin, Ashwagandha, Turmeric, T-Booster
+              <span class="guide-desc">Circles mark scheduled supplements, situated on concentric category tracks (increasing outwards):
                 <br>• <strong>Sleep (Indigo):</strong> ZMA, Magnesium, Theanine, Melatonin, Apigenin
+                <br>• <strong>Health (Green):</strong> Omega-3, Vit D3+K2, Multivitamin, Ashwagandha, Turmeric, T-Booster
+                <br>• <strong>Performance (Purple):</strong> Caffeine, Beta-Alanine, Citrulline, Alpha-GPC, Tyrosine, Electrolytes
+                <br>• <strong>Muscle (Light Blue):</strong> Creatine, Whey, Casein, EAAs
               </span>
             </div>
           </div>
