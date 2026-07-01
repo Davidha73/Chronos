@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>Chronos Supplement Clock</title>
+    <meta
+      name="description"
+      content="Circadian supplement and activity tracking clock."
+    />
+    <meta name="theme-color" content="#09090b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+
+    <!-- Inter Font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-day="training">
+    <div class="app-container" id="app">
+      <!-- PWA Install Banner -->
+      <div id="install-banner" class="install-banner">
+        <div class="install-banner-text">Add Chronos to your Home Screen</div>
+        <button id="banner-install-btn" class="install-banner-btn">
+          Install
+        </button>
+      </div>
+
+      <!-- Header -->
+      <header class="app-header">
+        <div class="brand">
+          <h1>CHRONOS</h1>
+          <p class="subtitle">Supplement & Activity Clock</p>
+        </div>
+        <button id="main-menu-btn" class="icon-btn" title="Menu">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+      </header>
+
+      <!-- Visual Clock face -->
+      <main class="clock-section">
+        <div class="clock-wrapper">
+          <svg id="clock-face" viewBox="0 0 200 200">
+            <!-- Outer circle face background -->
+            <circle cx="100" cy="100" r="92" class="clock-bg-ring" />
+
+            <!-- Category dashed concentric lines -->
+            <circle cx="100" cy="100" r="66" class="track-line" />
+            <!-- Muscle Track -->
+            <circle cx="100" cy="100" r="58" class="track-line" />
+            <!-- Performance Track -->
+            <circle cx="100" cy="100" r="50" class="track-line" />
+            <!-- Health Track -->
+            <circle cx="100" cy="100" r="42" class="track-line" />
+            <!-- Sleep Track -->
+
+            <!-- Arc backgrounds for visual depth -->
+            <path id="sleep-arc-bg" class="sleep-segment-bg" />
+            <path id="workout-arc-bg" class="workout-segment-bg" />
+
+            <!-- Active concentric arcs -->
+            <path id="sleep-arc" class="arc-segment sleep-segment" />
+            <path id="workout-arc" class="arc-segment workout-segment" />
+
+            <!-- Meal markers (diamonds) -->
+            <g id="meal-markers"></g>
+
+            <!-- Active supplements dots (rendered dynamically) -->
+            <g id="supp-markers"></g>
+
+            <!-- Ticks & Ticks labels (rendered dynamically) -->
+            <g id="clock-ticks"></g>
+
+            <!-- Dial Center Hub display -->
+            <g id="clock-center-group">
+              <circle cx="100" cy="100" r="34" class="clock-center-ring" />
+              <text id="digital-time" x="100" y="97" class="digital-time">
+                --:--
+              </text>
+              <text id="digital-date" x="100" y="110" class="digital-date">
+                ---, --- --
+              </text>
+            </g>
+
+            <!-- Pointer hands -->
+            <line
+              id="current-time-pointer"
+              x1="100"
+              y1="100"
+              x2="100"
+              y2="15"
+              class="time-pointer"
+            />
+            <circle
+              id="current-time-dot"
+              cx="100"
+              cy="15"
+              r="3"
+              class="time-pointer-dot"
+            />
+          </svg>
+          <button id="prev-day-btn" class="day-nav-btn btn-prev" title="Previous Day">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          <button id="next-day-btn" class="day-nav-btn btn-next" title="Next Day">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+          <button id="tab-training" class="day-round-btn btn-training active" title="Training Day">
+            <span class="material-symbols-outlined">fitness_center</span>
+          </button>
+          <button id="tab-rest" class="day-round-btn btn-rest" title="Rest Day">
+            <span class="material-symbols-outlined">bedtime</span>
+          </button>
+          <button id="clock-info-btn" class="clock-info-btn" title="Clock Guide">
+            <span class="material-symbols-outlined">info</span>
+          </button>
+        </div>
+      </main>
+
+      <!-- Event timeline list -->
+      <section class="timeline-section">
+        <div class="section-header">
+          <h2>Circadian & Supplements</h2>
+          <span id="day-badge" class="badge badge-training">Training</span>
+        </div>
+
+        <!-- Smart warning / optimization panel -->
+        <div id="warnings-panel" class="warnings-panel"></div>
+
+        <div id="timeline-list" class="timeline-list">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+
+
+      <!-- Full Page Side Menu -->
+      <div id="side-menu-overlay" class="sheet-overlay"></div>
+      <div id="side-menu" class="side-menu">
+        <div class="side-menu-header">
+          <h2>Menu</h2>
+          <button id="close-side-menu-btn" class="close-btn">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+        <div class="side-menu-body">
+          <div class="form-group-title">Weekly Schedule</div>
+          <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">Select your training days. The app will auto-switch to your training routine & stack on these days.</p>
+          <div class="weekly-planner">
+            <button class="day-btn" data-day="1">M</button>
+            <button class="day-btn" data-day="2">T</button>
+            <button class="day-btn" data-day="3">W</button>
+            <button class="day-btn" data-day="4">T</button>
+            <button class="day-btn" data-day="5">F</button>
+            <button class="day-btn" data-day="6">S</button>
+            <button class="day-btn" data-day="0">S</button>
+          </div>
+
+          <div class="form-group-title" style="margin-top: 24px;">Configuration</div>
+          <div class="menu-list">
+            <button id="menu-manage-stack-btn" class="menu-list-item">
+              <span>Manage Supplement Stack</span>
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+            <button id="menu-edit-schedule-btn" class="menu-list-item">
+              <span>Edit Daily Anchors</span>
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+            <button id="menu-download-btn" class="menu-list-item" style="display: none;">
+              <span>Install App (PWA)</span>
+              <span class="material-symbols-outlined">download</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit sheet drawer -->
+      <div id="sheet-overlay" class="sheet-overlay"></div>
+
+      <!-- Confirmation Modal -->
+      <div id="confirm-modal" class="confirm-modal">
+        <div class="confirm-modal-title">Change Day Type?</div>
+        <div class="confirm-modal-text" id="confirm-modal-msg">Are you sure you want to manually change the current day type?</div>
+        <div class="confirm-modal-actions">
+          <button class="btn btn-cancel" id="btn-modal-cancel">Cancel</button>
+          <button class="btn btn-confirm" id="btn-modal-confirm">Confirm</button>
+        </div>
+      </div>
+
+      <!-- Anchors sheet -->
+      <div id="sheet" class="side-menu">
+        <div class="side-menu-header">
+          <h2 id="sheet-title">Edit Schedule</h2>
+          <button id="close-sheet-btn" class="close-btn">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+        <div class="context-toggle-wrapper">
+          <div class="context-toggle" id="schedule-context-toggle">
+            <button class="context-btn active" data-context="training">Training Day</button>
+            <button class="context-btn" data-context="rest">Rest Day</button>
+          </div>
+        </div>
+
+        <form id="schedule-form" class="side-menu-body">
+          <div class="form-group-title">Sleep Window</div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="f-sleep-start">Bedtime (Sleep)</label>
+              <input
+                type="text"
+                id="f-sleep-start"
+                class="time-input"
+                readonly
+                required
+              />
+            </div>
+            <div class="form-field">
+              <label for="f-sleep-end">Wake Up</label>
+              <input
+                type="text"
+                id="f-sleep-end"
+                class="time-input"
+                readonly
+                required
+              />
+            </div>
+          </div>
+
+          <div id="form-workout-group">
+            <div class="form-group-title">Workout Window</div>
+            <div class="form-row">
+              <div class="form-field">
+                <label for="f-workout-start">Workout Start</label>
+                <input
+                  type="text"
+                  id="f-workout-start"
+                  class="time-input"
+                  readonly
+                />
+              </div>
+              <div class="form-field">
+                <label for="f-workout-end">Workout End</label>
+                <input
+                  type="text"
+                  id="f-workout-end"
+                  class="time-input"
+                  readonly
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group-title">Supplement Meals</div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="f-breakfast">Breakfast</label>
+              <input
+                type="text"
+                id="f-breakfast"
+                class="time-input"
+                readonly
+                required
+              />
+            </div>
+            <div class="form-field">
+              <label for="f-lunch">Lunch</label>
+              <input
+                type="text"
+                id="f-lunch"
+                class="time-input"
+                readonly
+                required
+              />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="f-dinner">Dinner</label>
+              <input
+                type="text"
+                id="f-dinner"
+                class="time-input"
+                readonly
+                required
+              />
+            </div>
+          </div>
+
+          <div id="additional-meals-section">
+            <div class="form-group-title">Additional Meals</div>
+            <div id="additional-meals-list">
+              <!-- Rendered dynamically -->
+            </div>
+            <button type="button" id="add-meal-field-btn" class="btn btn-secondary add-meal-field-btn">
+              <span class="material-symbols-outlined">add</span> Add Custom Meal
+            </button>
+          </div>
+
+          <div class="form-group-title">Rest Day Tweaks</div>
+          <div class="form-checkbox-row">
+            <input type="checkbox" id="f-high-protein-dinner" checked />
+            <label for="f-high-protein-dinner"
+              >Rest Day Dinner is High-Protein (Skips Casein)</label
+            >
+          </div>
+
+          <div class="form-group-title">Supplement Preferences</div>
+          <div class="form-checkbox-row">
+            <input type="checkbox" id="f-split-beta-alanine" />
+            <label for="f-split-beta-alanine"
+              >Split Beta-Alanine (prevent tingles)</label
+            >
+          </div>
+          <div class="form-row">
+            <div class="form-field" style="flex: 1 1 100%;">
+              <label for="f-ashwagandha-goal">Ashwagandha Goal</label>
+              <select id="f-ashwagandha-goal" class="goal-select">
+                <option value="sleep">Sleep Support (Evening)</option>
+                <option value="anxiety">Anxiety / Focus (Morning)</option>
+              </select>
+            </div>
+          </div>
+
+
+          <div class="sheet-actions">
+            <button
+              type="button"
+              id="reset-defaults-btn"
+              class="btn btn-secondary"
+            >
+              Reset
+            </button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Supplements stack drawer -->
+      <div id="supplements-sheet" class="side-menu">
+        <div class="side-menu-header">
+          <h2>Manage Supplement Stack</h2>
+          <button id="close-supplements-btn" class="close-btn">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+        <div class="context-toggle-wrapper">
+          <div class="context-toggle" id="supplements-context-toggle">
+            <button class="context-btn active" data-context="training">Training Day</button>
+            <button class="context-btn" data-context="rest">Rest Day</button>
+          </div>
+        </div>
+
+        <div class="side-menu-body">
+          <div id="supplements-list-container">
+            <!-- Rendered dynamically grouped by category -->
+          </div>
+
+          <div class="sheet-actions" style="margin-top: 15px">
+            <button id="btn-close-supp-save" class="btn btn-primary">Done</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Adjust Supplement Sheet -->
+      <div id="adjust-supplement-sheet" class="side-menu">
+        <div class="side-menu-header">
+          <h2 id="adjust-supp-title">Adjust Supplement</h2>
+          <button id="close-adjust-supp-btn" class="close-btn">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+        <form id="adjust-supp-form" class="side-menu-body">
+          <div class="form-group-title" id="adjust-supp-subtitle">Supplement Details</div>
+          
+          <div class="form-field adjust-field-group">
+            <label for="adjust-supp-dose">Custom Dosage</label>
+            <input type="text" id="adjust-supp-dose" class="text-input adjust-input-styled" required />
+          </div>
+
+          <div class="form-group-title">Timing Selection</div>
+          
+          <div class="context-toggle-wrapper adjust-field-group">
+            <div class="context-toggle" id="adjust-supp-timing-toggle">
+              <button type="button" class="adjust-context-btn active" data-timing="auto">Suggested (Auto)</button>
+              <button type="button" class="adjust-context-btn" data-timing="manual">Custom (Manual)</button>
+            </div>
+          </div>
+
+          <div id="adjust-supp-time-field" class="form-field adjust-field-group">
+            <label for="adjust-supp-time">Custom Time</label>
+            <input type="text" id="adjust-supp-time" class="time-input" readonly />
+          </div>
+
+          <div id="adjust-supp-clash-preview" class="adjust-clash-preview"></div>
+
+          <div class="sheet-actions">
+            <button type="button" id="adjust-supp-reset-btn" class="btn btn-secondary">Reset to Default</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- iOS Style Scroll Picker Sheet -->
+      <div id="ios-picker-overlay" class="sheet-overlay"></div>
+      <div id="ios-picker-sheet" class="bottom-sheet ios-picker-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <button id="ios-picker-cancel" class="picker-header-btn">
+            Cancel
+          </button>
+          <h3 id="ios-picker-title">Select Time</h3>
+          <button
+            id="ios-picker-done"
+            class="picker-header-btn picker-header-btn-done"
+          >
+            Done
+          </button>
+        </div>
+        <div class="ios-picker-body">
+          <div class="picker-wheel-container">
+            <div class="picker-selection-highlight"></div>
+
+            <!-- Hour Column -->
+            <div class="picker-column-wrapper">
+              <div class="picker-column-label">Hour</div>
+              <div id="hour-wheel" class="picker-column"></div>
+            </div>
+
+            <!-- Minute Column -->
+            <div class="picker-column-wrapper">
+              <div class="picker-column-label">Min</div>
+              <div id="minute-wheel" class="picker-column"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clock Guide Bottom Sheet -->
+      <div id="guide-sheet" class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <h3>Clock Face Guide</h3>
+          <button id="close-guide-sheet-btn" class="close-btn">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <div class="guide-item">
+            <div class="guide-visual-container">
+              <div class="guide-arc sleep"></div>
+            </div>
+            <div class="guide-text">
+              <span class="guide-title">Sleep Window (Purple Bar)</span>
+              <span class="guide-desc">The thick purple arc on the outer rim represents your scheduled sleep time. Optimal recovery happens here.</span>
+            </div>
+          </div>
+          
+          <div class="guide-item">
+            <div class="guide-visual-container">
+              <div class="guide-arc workout"></div>
+            </div>
+            <div class="guide-text">
+              <span class="guide-title">Workout Window (Orange Bar)</span>
+              <span class="guide-desc">The orange arc on the second rim represents your training session (only shown on Training Days). Helps anchor pre- and post-workout supplement timing.</span>
+            </div>
+          </div>
+          
+          <div class="guide-item">
+            <div class="guide-visual-container">
+              <div class="guide-diamond"></div>
+            </div>
+            <div class="guide-text">
+              <span class="guide-title">Meal Anchors (Green Diamonds)</span>
+              <span class="guide-desc">Represent Breakfast, Lunch, and Dinner. These act as circadian anchors to automatically align supplement intake.</span>
+            </div>
+          </div>
+          
+          <div class="guide-item">
+            <div class="guide-visual-container">
+              <div class="guide-triangle"></div>
+            </div>
+            <div class="guide-text">
+              <span class="guide-title">Clash Warnings (Red Triangles)</span>
+              <span class="guide-desc">Alerts you to circadian or chemical conflicts, such as taking caffeine near bedtime, vitamin D3 too late, or timing clashes between supplements.</span>
+            </div>
+          </div>
+
+          <div class="guide-item">
+            <div class="guide-visual-container">
+              <div class="guide-dot health"></div>
+            </div>
+            <div class="guide-text">
+              <span class="guide-title">Supplement Indicators (Colored Circles)</span>
+              <span class="guide-desc">Circles mark scheduled supplements, situated on concentric category tracks:
+                <br>• <strong>Muscle (Light Blue):</strong> Creatine, Whey, Casein, EAAs
+                <br>• <strong>Performance (Purple):</strong> Caffeine, Beta-Alanine, Citrulline, Alpha-GPC, Tyrosine, Electrolytes
+                <br>• <strong>Health (Green):</strong> Omega-3, Vit D3+K2, Multivitamin, Ashwagandha, Turmeric, T-Booster
+                <br>• <strong>Sleep (Indigo):</strong> ZMA, Magnesium, Theanine, Melatonin, Apigenin
+              </span>
+            </div>
+          </div>
+
+          <div class="guide-item">
+            <div class="guide-visual-container">
+              <div class="guide-dot health muted"></div>
+            </div>
+            <div class="guide-text">
+              <span class="guide-title">Dimmed Indicators (Absorption Conflicts)</span>
+              <span class="guide-desc">When a supplement's dot is faded, it indicates a minor absorption issue (e.g., taking Magnesium/ZMA too close to calcium or a heavy dinner).</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
