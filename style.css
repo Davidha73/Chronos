@@ -353,7 +353,7 @@ body {
   right: 0;
 }
 
-/* Day toggle round buttons */
+/* Day toggle round indicators */
 .day-round-btn {
   position: absolute;
   bottom: 0;
@@ -367,13 +367,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  cursor: default;
   transition: all 0.2s ease;
   z-index: 10;
-}
-
-.day-round-btn:active {
-  transform: scale(0.92);
 }
 
 .day-round-btn.btn-training {
@@ -705,7 +701,10 @@ body {
   align-items: center;
   justify-content: center;
   align-self: stretch;
-  transition: opacity 0.2s, background-color 0.2s, transform 0.1s;
+  transition:
+    opacity 0.2s,
+    background-color 0.2s,
+    transform 0.1s;
   margin-left: 4px;
 }
 
@@ -935,6 +934,13 @@ body {
 
 .menu-list-item .material-symbols-outlined {
   color: var(--text-secondary);
+  font-size: 20px;
+}
+
+.menu-list-item-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 /* Bottom Sheet Modal */
@@ -1033,17 +1039,20 @@ body {
   border-top: 1px solid var(--border);
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
-  transform: translateY(100%);
+  transform: translate3d(0, 100%, 0);
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 101;
   padding: 0 20px calc(20px + var(--safe-bottom)) 20px;
   display: flex;
   flex-direction: column;
   max-height: 82%;
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .bottom-sheet.active {
-  transform: translateY(0);
+  transform: translate3d(0, 0, 0);
 }
 
 .sheet-handle {
@@ -1107,9 +1116,21 @@ body {
   padding-bottom: 4px;
 }
 
+.weekly-setup-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+#menu-download-btn {
+  display: none;
+}
+
 .form-row {
   display: flex;
   gap: 12px;
+  margin-top: 8px;
 }
 
 .form-field {
@@ -1598,7 +1619,9 @@ input:checked + .slider:before {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.2s ease, transform 0.1s;
+  transition:
+    all 0.2s ease,
+    transform 0.1s;
   margin-left: 4px;
 }
 
@@ -1880,4 +1903,198 @@ input:checked + .slider:before {
   color: #818cf8;
   border-color: rgba(129, 140, 248, 0.3);
   background-color: rgba(129, 140, 248, 0.07);
+}
+
+/* Setup Cards styling */
+.setup-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.setup-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+.setup-card-header h2 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.setup-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Drawer & Overlay stacking contexts */
+#side-menu-overlay {
+  z-index: 100;
+}
+#side-menu {
+  z-index: 101;
+}
+#sheet-overlay {
+  z-index: 102;
+}
+#guide-sheet {
+  z-index: 103;
+}
+#supplements-setup-sheet {
+  z-index: 103;
+}
+#anchors-setup-sheet {
+  z-index: 103;
+}
+#adjust-supplement-sheet {
+  z-index: 104;
+}
+
+#side-menu-setup-card {
+  margin-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  z-index: 1;
+  position: relative;
+}
+
+.setup-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.setup-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 16px 0;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.setup-action-btn:active {
+  opacity: 0.7;
+  transform: scale(0.99);
+}
+
+.setup-action-btn-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.setup-action-btn-content span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.setup-action-btn .material-symbols-outlined {
+  color: var(--text-secondary);
+  font-size: 20px;
+}
+
+.setup-card-body .setup-action-btn:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+
+#side-menu .menu-list {
+  margin-top: 20px;
+}
+
+/* Weekly Planner as tab headers in Side Menu */
+#side-menu .weekly-planner {
+  margin-top: 20px;
+  margin-bottom: 0;
+  gap: 2px;
+  padding: 0;
+}
+
+#side-menu .day-btn {
+  flex: 1;
+  border-radius: 10px 10px 0 0;
+  height: 40px;
+  margin-bottom: -1px;
+  position: relative;
+  border: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background-color: rgba(255, 255, 255, 0.02);
+  color: var(--text-secondary);
+  font-size: 13px;
+  z-index: 1;
+  box-shadow: none;
+}
+
+#side-menu .day-btn.selected-day {
+  background-color: var(--card-bg);
+  border-color: var(--border);
+  border-bottom-color: var(--card-bg) !important;
+  z-index: 2;
+  color: var(--accent);
+  font-weight: 800;
+  height: 48px;
+  margin-top: -8px;
+  flex: 1.25;
+  font-size: 16px;
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.15);
+  border-top: 3px solid var(--accent);
+}
+
+/* Training vs Rest styling for tabs */
+#side-menu .day-btn.active {
+  background-color: rgba(255, 255, 255, 0.02);
+  border-color: var(--border);
+  color: var(--text);
+  border-top: 3px solid var(--workout);
+  box-shadow: none;
+}
+
+#side-menu .day-btn.active.selected-day {
+  background-color: var(--card-bg);
+  border-bottom-color: var(--card-bg) !important;
+  color: var(--accent);
+  border-top: 3px solid var(--workout);
+}
+
+.toggle-row {
+  justify-content: space-between;
+  width: 100%;
+}
+
+.settings-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-item:last-child {
+  border-bottom: none;
+}
+
+.settings-item-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.settings-item-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
 }

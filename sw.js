@@ -1,4 +1,4 @@
-const CACHE_NAME = "chronos-v29";
+const CACHE_NAME = "chronos-v48";
 const ASSETS = ["./", "./index.html", "./style.css", "./app.js"];
 
 self.addEventListener("install", (e) => {

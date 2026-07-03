@@ -290,6 +290,15 @@ let appState = {
   dayType: "training",
   weeklySchedule: [false, false, false, false, false, false, false], // Sun-Sat (false=rest, true=training)
   schedule: JSON.parse(JSON.stringify(DEFAULTS)),
+  weeklySchedules: {
+    0: JSON.parse(JSON.stringify(DEFAULTS.rest)),
+    1: JSON.parse(JSON.stringify(DEFAULTS.training)),
+    2: JSON.parse(JSON.stringify(DEFAULTS.training)),
+    3: JSON.parse(JSON.stringify(DEFAULTS.training)),
+    4: JSON.parse(JSON.stringify(DEFAULTS.training)),
+    5: JSON.parse(JSON.stringify(DEFAULTS.training)),
+    6: JSON.parse(JSON.stringify(DEFAULTS.rest))
+  },
   weeklySupplements: {
     0: ["creatine", "omega3", "t_booster", "whey", "electrolytes", "zma", "casein"],
     1: ["creatine", "omega3", "t_booster", "whey", "electrolytes", "zma", "casein"],
@@ -494,6 +503,20 @@ async function loadState() {
           initialWeeklyOverrides[i] = JSON.parse(JSON.stringify(sourceOverrides || {}));
         }
         appState.weeklyOverrides = initialWeeklyOverrides;
+      }
+
+      if (parsed && parsed.weeklySchedules) {
+        appState.weeklySchedules = parsed.weeklySchedules;
+      } else {
+        const initialWeeklySchedules = {};
+        for (let i = 0; i < 7; i++) {
+          const isTraining = appState.weeklySchedule[i];
+          const sourceSchedule = (parsed && parsed.schedule)
+            ? (isTraining ? parsed.schedule.training : parsed.schedule.rest)
+            : (isTraining ? appState.schedule.training : appState.schedule.rest);
+          initialWeeklySchedules[i] = JSON.parse(JSON.stringify(sourceSchedule || {}));
+        }
+        appState.weeklySchedules = initialWeeklySchedules;
       }
 
       if (parsed && parsed.hasOwnProperty("highProteinDinnerRest")) {
@@ -867,8 +890,8 @@ function renderDialTicks() {
 }
 
 // // Render SVG Segments & Markers
-function renderClockSegments(scheduledSupps, userAnchors) {
-  const sched = appState.schedule[appState.dayType];
+function renderClockSegments(scheduledSupps, userAnchors, dayOfWeek) {
+  const sched = appState.weeklySchedules[dayOfWeek];
   const dayType = appState.dayType;
 
   // 1. Sleep Segment Arc
@@ -1118,8 +1141,8 @@ function highlightClockSegment(type) {
 }
 
 // Build chronological timeline event list
-function renderTimeline(scheduledSupps, userAnchors) {
-  const sched = appState.schedule[appState.dayType];
+function renderTimeline(scheduledSupps, userAnchors, dayOfWeek) {
+  const sched = appState.weeklySchedules[dayOfWeek];
   const dayType = appState.dayType;
   const listEl = document.getElementById("timeline-list");
   listEl.innerHTML = "";
@@ -1515,18 +1538,18 @@ function openSupplementsDrawer(resetContext = true) {
     menuContext = dayOfWeek; // menuContext stores the viewed dayOfWeek index (0-6)
   }
 
-  // Update Drawer Title and day-type badge
-  document.getElementById("supplements-sheet-title").textContent = `Manage ${dayNames[menuContext]} Stack`;
+  // Update day-type badge
   const isTrainingDay = appState.weeklySchedule[menuContext];
   const badge = document.getElementById("supp-day-type-badge");
-  badge.textContent = isTrainingDay ? "Training Day" : "Rest Day";
-  badge.className = `supp-day-type-badge ${isTrainingDay ? "badge-training" : "badge-rest"}`;
+  if (badge) {
+    badge.textContent = isTrainingDay ? "Training Day" : "Rest Day";
+    badge.className = `supp-day-type-badge ${isTrainingDay ? "badge-training" : "badge-rest"}`;
+  }
 
   updateCopyOptionsDropdown();
 
-  const overlay = document.getElementById("sheet-overlay");
-  const sheet = document.getElementById("supplements-sheet");
   const container = document.getElementById("supplements-list-container");
+  if (!container) return;
   container.innerHTML = "";
 
   const categories = {
@@ -1564,7 +1587,7 @@ function openSupplementsDrawer(resetContext = true) {
         : supp.unit;
 
       const editButtonHtml = isActive ? `
-        <button class="supp-item-edit-btn" data-id="${id}" title="Adjust dose/timing">
+        <button type="button" class="supp-item-edit-btn" data-id="${id}" title="Adjust dose/timing">
           <span class="material-symbols-outlined">edit</span>
         </button>
       ` : "";
@@ -1592,7 +1615,7 @@ function openSupplementsDrawer(resetContext = true) {
       }
 
       item.addEventListener("click", (e) => {
-        if (e.target.closest('.switch')) return;
+        if (e.target.closest('.switch') || e.target.closest('.supp-item-edit-btn')) return;
         const input = item.querySelector("input");
         input.checked = !input.checked;
         input.dispatchEvent(new Event("change"));
@@ -1620,9 +1643,6 @@ function openSupplementsDrawer(resetContext = true) {
 
     container.appendChild(groupDiv);
   });
-
-  overlay.classList.add("active");
-  sheet.classList.add("active");
 }
 
 function updateCopyOptionsDropdown() {
@@ -1651,13 +1671,17 @@ function updateCopyOptionsDropdown() {
 }
 
 function closeSupplementsDrawer() {
-  document.getElementById("sheet-overlay").classList.remove("active");
-  document.getElementById("supplements-sheet").classList.remove("active");
+  closeSupplementsSetupDrawer();
 }
 
 function openSideMenu() {
   document.getElementById("side-menu-overlay").classList.add("active");
   document.getElementById("side-menu").classList.add("active");
+
+  const viewDate = new Date();
+  viewDate.setDate(viewDate.getDate() + appState.viewDateOffset);
+  const dayOfWeek = viewDate.getDay();
+  selectDayInWeeklyPlanner(dayOfWeek);
 }
 
 function closeSideMenu() {
@@ -1688,7 +1712,7 @@ function openAdjustSupplementDrawer(suppId) {
   const timeInput = document.getElementById("adjust-supp-time");
   
   // Calculate default suggested time to display as info
-  const currentSched = appState.schedule[dayType];
+  const currentSched = appState.weeklySchedules[menuContext];
   const userAnchors = {
     isRestDay: !isTraining,
     meals: {
@@ -1774,9 +1798,10 @@ function updateAdjustSuppClashPreview(suppId) {
     time: isManual ? customTime : null
   };
 
-  const currentSched = appState.schedule[appState.dayType];
+  const currentSched = appState.weeklySchedules[menuContext];
+  const isTraining = appState.weeklySchedule[menuContext];
   const userAnchors = {
-    isRestDay: appState.dayType === "rest",
+    isRestDay: !isTraining,
     meals: {
       breakfast: timeStringToMinutes(currentSched.breakfast),
       lunch: timeStringToMinutes(currentSched.lunch),
@@ -1872,13 +1897,12 @@ function addMealRowToDOM(id, name, time) {
 
 function openDrawer(resetContext = true) {
   if (resetContext) {
-    menuContext = appState.dayType;
+    const viewDate = new Date();
+    viewDate.setDate(viewDate.getDate() + appState.viewDateOffset);
+    menuContext = viewDate.getDay();
   }
-  updateContextToggles();
 
-  const overlay = document.getElementById("sheet-overlay");
-  const sheet = document.getElementById("sheet");
-  const sched = appState.schedule[menuContext];
+  const sched = appState.weeklySchedules[menuContext];
 
   document.getElementById("f-sleep-start").value = sched.sleepStart;
   document.getElementById("f-sleep-end").value = sched.sleepEnd;
@@ -1897,14 +1921,19 @@ function openDrawer(resetContext = true) {
   document.getElementById("f-high-protein-dinner").checked =
     appState.highProteinDinnerRest;
   
-  // Populating new supplement settings
+  // Populating new supplement preferences
   document.getElementById("f-split-beta-alanine").checked =
     appState.splitBetaAlanine;
   document.getElementById("f-ashwagandha-goal").value =
     appState.ashwagandhaGoal || "sleep";
 
+  const isTraining = appState.weeklySchedule[menuContext];
+  const trCheck = document.getElementById("f-is-training-day");
+  if (trCheck) {
+    trCheck.checked = isTraining;
+  }
   const workoutGroup = document.getElementById("form-workout-group");
-  if (menuContext === "training") {
+  if (isTraining) {
     workoutGroup.style.display = "block";
     document.getElementById("f-workout-start").value =
       sched.workoutStart || "";
@@ -1917,17 +1946,57 @@ function openDrawer(resetContext = true) {
     document.getElementById("f-workout-start").required = false;
     document.getElementById("f-workout-end").required = false;
   }
-
-  document.getElementById("sheet-title").textContent =
-    `Edit ${menuContext === "training" ? "Training" : "Rest"} Day`;
-
-  overlay.classList.add("active");
-  sheet.classList.add("active");
 }
 
 function closeDrawer() {
+  closeAnchorsSetupDrawer();
+}
+
+function selectDayInWeeklyPlanner(dayIndex) {
+  menuContext = dayIndex;
+
+  document.querySelectorAll("#side-menu .day-btn").forEach(btn => {
+    const idx = parseInt(btn.getAttribute("data-day"));
+    if (idx === dayIndex) {
+      btn.classList.add("selected-day");
+    } else {
+      btn.classList.remove("selected-day");
+    }
+  });
+
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const title = document.getElementById("side-menu-setup-title");
+  if (title) {
+    title.textContent = `Configure ${dayNames[dayIndex]}`;
+  }
+}
+
+function openSupplementsSetupDrawer() {
+  openSupplementsDrawer(false);
+  document.getElementById("sheet-overlay").classList.add("active");
+  const sheet = document.getElementById("supplements-setup-sheet");
+  if (sheet) sheet.classList.add("active");
+}
+
+function closeSupplementsSetupDrawer() {
   document.getElementById("sheet-overlay").classList.remove("active");
-  document.getElementById("sheet").classList.remove("active");
+  const sheet = document.getElementById("supplements-setup-sheet");
+  if (sheet) sheet.classList.remove("active");
+  renderAll();
+}
+
+function openAnchorsSetupDrawer() {
+  openDrawer(false);
+  document.getElementById("sheet-overlay").classList.add("active");
+  const sheet = document.getElementById("anchors-setup-sheet");
+  if (sheet) sheet.classList.add("active");
+}
+
+function closeAnchorsSetupDrawer() {
+  document.getElementById("sheet-overlay").classList.remove("active");
+  const sheet = document.getElementById("anchors-setup-sheet");
+  if (sheet) sheet.classList.remove("active");
+  renderAll();
 }
 
 function openGuideSheet() {
@@ -1967,7 +2036,11 @@ function setDayType(type) {
 }
 
 function renderAll() {
-  const currentSched = appState.schedule[appState.dayType];
+  const viewDate = new Date();
+  viewDate.setDate(viewDate.getDate() + appState.viewDateOffset);
+  const dayOfWeek = viewDate.getDay();
+
+  const currentSched = appState.weeklySchedules[dayOfWeek];
   const userAnchors = {
     isRestDay: appState.dayType === "rest",
     meals: {
@@ -1993,10 +2066,6 @@ function renderAll() {
     });
   }
 
-  const viewDate = new Date();
-  viewDate.setDate(viewDate.getDate() + appState.viewDateOffset);
-  const dayOfWeek = viewDate.getDay();
-
   const settings = {
     splitBetaAlanine: appState.splitBetaAlanine,
     ashwagandhaGoal: appState.ashwagandhaGoal,
@@ -2005,8 +2074,18 @@ function renderAll() {
 
   const scheduledSupps = calculateOptimalTimes(userAnchors, appState.weeklySupplements[dayOfWeek], settings);
 
-  renderClockSegments(scheduledSupps, userAnchors);
-  renderTimeline(scheduledSupps, userAnchors);
+  renderClockSegments(scheduledSupps, userAnchors, dayOfWeek);
+  renderTimeline(scheduledSupps, userAnchors, dayOfWeek);
+
+  // If daily setup view is visible, keep inline cards populated with the current day's state
+  const suppSheet = document.getElementById("supplements-setup-sheet");
+  if (suppSheet && suppSheet.classList.contains("active")) {
+    openSupplementsDrawer(false);
+  }
+  const anchorsSheet = document.getElementById("anchors-setup-sheet");
+  if (anchorsSheet && anchorsSheet.classList.contains("active")) {
+    openDrawer(false);
+  }
 }
 
 // iOS Custom Wheel Picker Helpers
@@ -2266,16 +2345,7 @@ async function initApp() {
   updateClockHands();
   setInterval(updateClockHands, 1000);
 
-  document
-    .getElementById("tab-training")
-    .addEventListener("click", () => handleDayTypeChangeAttempt("training"));
-  document
-    .getElementById("tab-rest")
-    .addEventListener("click", () => handleDayTypeChangeAttempt("rest"));
-
-  // Bind modal actions
-  document.getElementById("btn-modal-cancel").addEventListener("click", closeConfirmModal);
-  document.getElementById("btn-modal-confirm").addEventListener("click", confirmDayTypeChange);
+  // (Tab indicators are static, no click listeners required)
 
   document
     .getElementById("prev-day-btn")
@@ -2358,44 +2428,67 @@ async function initApp() {
     .getElementById("side-menu-overlay")
     .addEventListener("click", closeSideMenu);
 
-  document
-    .getElementById("menu-manage-stack-btn")
-    .addEventListener("click", () => {
-      openSupplementsDrawer();
-    });
-
-  document
-    .getElementById("menu-edit-schedule-btn")
-    .addEventListener("click", () => {
-      openDrawer();
-    });
-
-  // Setup Weekly Planner buttons
+  // Setup Weekly Planner buttons to select active day for configuration
   document.querySelectorAll(".day-btn").forEach(btn => {
     const dayIndex = parseInt(btn.getAttribute("data-day"));
     if (appState.weeklySchedule[dayIndex]) {
       btn.classList.add("active");
     }
     btn.addEventListener("click", () => {
-      appState.weeklySchedule[dayIndex] = !appState.weeklySchedule[dayIndex];
+      selectDayInWeeklyPlanner(dayIndex);
+    });
+  });
+
+  // Bind inline day setup card buttons
+  document.getElementById("btn-open-supplements-setup").addEventListener("click", openSupplementsSetupDrawer);
+  document.getElementById("btn-open-anchors-setup").addEventListener("click", openAnchorsSetupDrawer);
+
+  const updateWeeklyPlannerButtons = () => {
+    document.querySelectorAll(".day-btn").forEach(btn => {
+      const dayIndex = parseInt(btn.getAttribute("data-day"));
       if (appState.weeklySchedule[dayIndex]) {
         btn.classList.add("active");
       } else {
         btn.classList.remove("active");
       }
-      saveState();
     });
-  });
+  };
 
-  document
-    .getElementById("close-sheet-btn")
-    .addEventListener("click", closeDrawer);
-  document
-    .getElementById("close-supplements-btn")
-    .addEventListener("click", closeSupplementsDrawer);
-  document
-    .getElementById("btn-close-supp-save")
-    .addEventListener("click", closeSupplementsDrawer);
+  // Change handler for training day checkbox in anchors card
+  const trainingDayCheckbox = document.getElementById("f-is-training-day");
+  if (trainingDayCheckbox) {
+    trainingDayCheckbox.addEventListener("change", (e) => {
+      const isTraining = e.target.checked;
+      appState.weeklySchedule[menuContext] = isTraining;
+      
+      const workoutGroup = document.getElementById("form-workout-group");
+      if (workoutGroup) {
+        workoutGroup.style.display = isTraining ? "block" : "none";
+        document.getElementById("f-workout-start").required = isTraining;
+        document.getElementById("f-workout-end").required = isTraining;
+      }
+      
+      updateWeeklyPlannerButtons();
+      saveState();
+      
+      // Update badge in supplements card
+      const badge = document.getElementById("supp-day-type-badge");
+      if (badge) {
+        badge.textContent = isTraining ? "Training Day" : "Rest Day";
+        badge.className = `supp-day-type-badge ${isTraining ? "badge-training" : "badge-rest"}`;
+      }
+    });
+  }
+
+  // Close buttons for separate drawers
+  const closeSuppsBtn = document.getElementById("close-supplements-setup-btn");
+  if (closeSuppsBtn) {
+    closeSuppsBtn.addEventListener("click", closeSupplementsSetupDrawer);
+  }
+  const closeAnchorsBtn = document.getElementById("close-anchors-setup-btn");
+  if (closeAnchorsBtn) {
+    closeAnchorsBtn.addEventListener("click", closeAnchorsSetupDrawer);
+  }
 
   // Copy day stack button
   document.getElementById("btn-copy-day-stack").addEventListener("click", () => {
@@ -2416,14 +2509,17 @@ async function initApp() {
     renderAll();
     openSupplementsDrawer(false);
   });
-  document
-    .getElementById("close-adjust-supp-btn")
-    .addEventListener("click", closeAdjustSupplementDrawer);
+
+  const closeAdjustSuppBtn = document.getElementById("close-adjust-supp-btn");
+  if (closeAdjustSuppBtn) {
+    closeAdjustSuppBtn.addEventListener("click", closeAdjustSupplementDrawer);
+  }
+
   document
     .getElementById("sheet-overlay")
     .addEventListener("click", () => {
-      closeDrawer();
-      closeSupplementsDrawer();
+      closeSupplementsSetupDrawer();
+      closeAnchorsSetupDrawer();
       closeAdjustSupplementDrawer();
       closeConfirmModal();
       closeGuideSheet();
@@ -2444,12 +2540,12 @@ async function initApp() {
       addMealRowToDOM(uniqueId, "", "12:00");
     });
 
-  // Form submission saves state
+  // Form submission saves state for daily anchors card
   document
     .getElementById("schedule-form")
     .addEventListener("submit", (e) => {
       e.preventDefault();
-      const sched = appState.schedule[menuContext];
+      const sched = appState.weeklySchedules[menuContext];
 
       sched.sleepStart = document.getElementById("f-sleep-start").value;
       sched.sleepEnd = document.getElementById("f-sleep-end").value;
@@ -2478,42 +2574,34 @@ async function initApp() {
         "f-ashwagandha-goal",
       ).value;
 
-      if (menuContext === "training") {
-        sched.workoutStart =
-          document.getElementById("f-workout-start").value;
+      const isTraining = document.getElementById("f-is-training-day").checked;
+      appState.weeklySchedule[menuContext] = isTraining;
+      if (isTraining) {
+        sched.workoutStart = document.getElementById("f-workout-start").value;
         sched.workoutEnd = document.getElementById("f-workout-end").value;
+      } else {
+        sched.workoutStart = "";
+        sched.workoutEnd = "";
       }
 
+      updateWeeklyPlannerButtons();
       saveState();
       renderAll();
-      closeDrawer();
+      closeAnchorsSetupDrawer();
     });
 
   // Reset settings to initial defaults
   document
     .getElementById("reset-defaults-btn")
     .addEventListener("click", () => {
-      appState.schedule[menuContext] = JSON.parse(
-        JSON.stringify(DEFAULTS[menuContext]),
+      const isTraining = document.getElementById("f-is-training-day").checked;
+      appState.weeklySchedules[menuContext] = JSON.parse(
+        JSON.stringify(DEFAULTS[isTraining ? "training" : "rest"]),
       );
       appState.splitBetaAlanine = false;
       appState.ashwagandhaGoal = "sleep";
       openDrawer(false);
     });
-
-  // Setup context toggle buttons for menus
-  document.querySelectorAll(".context-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      menuContext = e.target.getAttribute("data-context");
-      updateContextToggles();
-      // Determine which drawer we are in and re-render
-      if (document.getElementById("supplements-sheet").classList.contains("active")) {
-        openSupplementsDrawer(false);
-      } else if (document.getElementById("sheet").classList.contains("active")) {
-        openDrawer(false);
-      }
-    });
-  });
 
   // Adjust Supplement Drawer Form listeners
   const timingToggle = document.getElementById("adjust-supp-timing-toggle");
@@ -2563,7 +2651,8 @@ async function initApp() {
     renderAll();
     closeAdjustSupplementDrawer();
     
-    if (document.getElementById("supplements-sheet").classList.contains("active")) {
+    const suppSheet = document.getElementById("supplements-setup-sheet");
+    if (suppSheet && suppSheet.classList.contains("active")) {
       openSupplementsDrawer(false);
     }
   });
@@ -2579,7 +2668,8 @@ async function initApp() {
     renderAll();
     closeAdjustSupplementDrawer();
 
-    if (document.getElementById("supplements-sheet").classList.contains("active")) {
+    const suppSheet = document.getElementById("supplements-setup-sheet");
+    if (suppSheet && suppSheet.classList.contains("active")) {
       openSupplementsDrawer(false);
     }
   });

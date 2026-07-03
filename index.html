@@ -131,12 +131,12 @@
           <button id="next-day-btn" class="day-nav-btn btn-next" title="Next Day">
             <span class="material-symbols-outlined">chevron_right</span>
           </button>
-          <button id="tab-training" class="day-round-btn btn-training active" title="Training Day">
+          <div id="tab-training" class="day-round-btn btn-training active">
             <span class="material-symbols-outlined">fitness_center</span>
-          </button>
-          <button id="tab-rest" class="day-round-btn btn-rest" title="Rest Day">
+          </div>
+          <div id="tab-rest" class="day-round-btn btn-rest">
             <span class="material-symbols-outlined">bedtime</span>
-          </button>
+          </div>
           <button id="clock-info-btn" class="clock-info-btn" title="Clock Guide">
             <span class="material-symbols-outlined">info</span>
           </button>
@@ -158,77 +158,52 @@
         </div>
       </section>
 
-
-
-      <!-- Full Page Side Menu -->
-      <div id="side-menu-overlay" class="sheet-overlay"></div>
-      <div id="side-menu" class="side-menu">
+      <!-- Day Setup Sheet Drawer -->
+      <!-- Supplements Setup Drawer -->
+      <div id="supplements-setup-sheet" class="side-menu">
         <div class="side-menu-header">
-          <h2>Menu</h2>
-          <button id="close-side-menu-btn" class="close-btn">
+          <h2 id="supplements-setup-title">Manage Supplement Stack</h2>
+          <button id="close-supplements-setup-btn" class="close-btn">
             <span class="material-symbols-outlined">chevron_right</span>
           </button>
         </div>
         <div class="side-menu-body">
-          <div class="form-group-title">Weekly Schedule</div>
-          <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">Select your training days. The app will auto-switch to your training routine & stack on these days.</p>
-          <div class="weekly-planner">
-            <button class="day-btn" data-day="1">M</button>
-            <button class="day-btn" data-day="2">T</button>
-            <button class="day-btn" data-day="3">W</button>
-            <button class="day-btn" data-day="4">T</button>
-            <button class="day-btn" data-day="5">F</button>
-            <button class="day-btn" data-day="6">S</button>
-            <button class="day-btn" data-day="0">S</button>
+          <div class="supp-sheet-day-badge-row">
+            <span id="supp-day-type-badge" class="supp-day-type-badge">Training Day</span>
           </div>
-
-          <div class="form-group-title" style="margin-top: 24px;">Configuration</div>
-          <div class="menu-list">
-            <button id="menu-manage-stack-btn" class="menu-list-item">
-              <span>Manage Supplement Stack</span>
-              <span class="material-symbols-outlined">chevron_right</span>
-            </button>
-            <button id="menu-edit-schedule-btn" class="menu-list-item">
-              <span>Edit Daily Anchors</span>
-              <span class="material-symbols-outlined">chevron_right</span>
-            </button>
-            <button id="menu-download-btn" class="menu-list-item" style="display: none;">
-              <span>Install App (PWA)</span>
-              <span class="material-symbols-outlined">download</span>
-            </button>
+          <!-- Copy Day Stack Options -->
+          <div id="supplements-copy-container" class="copy-actions-container">
+            <span class="copy-label">Duplicate Stack</span>
+            <div class="copy-inputs-row">
+              <select id="copy-from-day-select" class="dropdown-styled">
+                <option value="">Select day...</option>
+              </select>
+              <button type="button" id="btn-copy-day-stack" class="btn btn-secondary btn-copy-small">Copy</button>
+            </div>
+          </div>
+          <div id="supplements-list-container">
+            <!-- Rendered dynamically grouped by category -->
           </div>
         </div>
       </div>
 
-      <!-- Edit sheet drawer -->
-      <div id="sheet-overlay" class="sheet-overlay"></div>
-
-      <!-- Confirmation Modal -->
-      <div id="confirm-modal" class="confirm-modal">
-        <div class="confirm-modal-title">Change Day Type?</div>
-        <div class="confirm-modal-text" id="confirm-modal-msg">Are you sure you want to manually change the current day type?</div>
-        <div class="confirm-modal-actions">
-          <button class="btn btn-cancel" id="btn-modal-cancel">Cancel</button>
-          <button class="btn btn-confirm" id="btn-modal-confirm">Confirm</button>
-        </div>
-      </div>
-
-      <!-- Anchors sheet -->
-      <div id="sheet" class="side-menu">
+      <!-- Anchors Setup Drawer -->
+      <div id="anchors-setup-sheet" class="side-menu">
         <div class="side-menu-header">
-          <h2 id="sheet-title">Edit Schedule</h2>
-          <button id="close-sheet-btn" class="close-btn">
+          <h2 id="anchors-setup-title">Edit Daily Anchors</h2>
+          <button id="close-anchors-setup-btn" class="close-btn">
             <span class="material-symbols-outlined">chevron_right</span>
           </button>
         </div>
-        <div class="context-toggle-wrapper">
-          <div class="context-toggle" id="schedule-context-toggle">
-            <button class="context-btn active" data-context="training">Training Day</button>
-            <button class="context-btn" data-context="rest">Rest Day</button>
-          </div>
-        </div>
-
         <form id="schedule-form" class="side-menu-body">
+          <div class="form-checkbox-row toggle-row">
+            <label for="f-is-training-day">Training Day (Enables Workout)</label>
+            <label class="switch">
+              <input type="checkbox" id="f-is-training-day" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
           <div class="form-group-title">Sleep Window</div>
           <div class="form-row">
             <div class="form-field">
@@ -325,7 +300,7 @@
 
           <div class="form-group-title">Rest Day Tweaks</div>
           <div class="form-checkbox-row">
-            <input type="checkbox" id="f-high-protein-dinner" checked />
+            <input type="checkbox" id="f-high-protein-dinner" />
             <label for="f-high-protein-dinner"
               >Rest Day Dinner is High-Protein (Skips Casein)</label
             >
@@ -339,7 +314,7 @@
             >
           </div>
           <div class="form-row">
-            <div class="form-field" style="flex: 1 1 100%;">
+            <div class="form-field">
               <label for="f-ashwagandha-goal">Ashwagandha Goal</label>
               <select id="f-ashwagandha-goal" class="goal-select">
                 <option value="sleep">Sleep Support (Evening)</option>
@@ -348,53 +323,100 @@
             </div>
           </div>
 
-
           <div class="sheet-actions">
             <button
               type="button"
               id="reset-defaults-btn"
               class="btn btn-secondary"
             >
-              Reset
+              Reset Defaults
             </button>
             <button type="submit" class="btn btn-primary">Save Changes</button>
           </div>
         </form>
       </div>
 
-      <!-- Supplements stack drawer -->
-      <div id="supplements-sheet" class="side-menu">
+      <!-- Full Page Side Menu -->
+      <div id="side-menu-overlay" class="sheet-overlay"></div>
+      <div id="side-menu" class="side-menu">
         <div class="side-menu-header">
-          <h2 id="supplements-sheet-title">Manage Supplement Stack</h2>
-          <button id="close-supplements-btn" class="close-btn">
+          <h2>Menu</h2>
+          <button id="close-side-menu-btn" class="close-btn">
             <span class="material-symbols-outlined">chevron_right</span>
           </button>
         </div>
-        <div class="supp-sheet-day-badge-row">
-          <span id="supp-day-type-badge" class="supp-day-type-badge">Training Day</span>
-        </div>
-
         <div class="side-menu-body">
-          <!-- Copy Day Stack Options -->
-          <div id="supplements-copy-container" class="copy-actions-container">
-            <span class="copy-label">Duplicate Stack</span>
-            <div class="copy-inputs-row">
-              <select id="copy-from-day-select" class="dropdown-styled">
-                <option value="">Select day...</option>
-              </select>
-              <button type="button" id="btn-copy-day-stack" class="btn btn-secondary btn-copy-small">Copy</button>
+          <div class="form-group-title">Weekly Setup</div>
+          <p class="weekly-setup-desc">Click on any day icon to configure its Supplement Stack and Daily Anchors setup.</p>
+          <div class="weekly-planner">
+            <button class="day-btn" data-day="1">M</button>
+            <button class="day-btn" data-day="2">T</button>
+            <button class="day-btn" data-day="3">W</button>
+            <button class="day-btn" data-day="4">T</button>
+            <button class="day-btn" data-day="5">F</button>
+            <button class="day-btn" data-day="6">S</button>
+            <button class="day-btn" data-day="0">S</button>
+          </div>
+
+          <!-- Inline Day Configuration Card -->
+          <div class="setup-card" id="side-menu-setup-card">
+            <div class="setup-card-header">
+              <h2 id="side-menu-setup-title">Configure Day</h2>
+            </div>
+            <div class="setup-card-body">
+              <button id="btn-open-anchors-setup" class="setup-action-btn">
+                <span class="setup-action-btn-content">
+                  <span class="material-symbols-outlined">schedule</span>
+                  <span>Edit Daily Anchors</span>
+                </span>
+                <span class="material-symbols-outlined">chevron_right</span>
+              </button>
+              <button id="btn-open-supplements-setup" class="setup-action-btn">
+                <span class="setup-action-btn-content">
+                  <span class="material-symbols-outlined">pill</span>
+                  <span>Manage Supplement Stack</span>
+                </span>
+                <span class="material-symbols-outlined">chevron_right</span>
+              </button>
             </div>
           </div>
 
-          <div id="supplements-list-container">
-            <!-- Rendered dynamically grouped by category -->
+          <!-- Settings -->
+          <div class="menu-list" id="side-menu-settings-list">
+            <button id="btn-open-settings" class="menu-list-item">
+              <span class="menu-list-item-content">
+                <span class="material-symbols-outlined">settings</span>
+                <span>Settings</span>
+              </span>
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
           </div>
 
-          <div class="sheet-actions" style="margin-top: 15px">
-            <button id="btn-close-supp-save" class="btn btn-primary">Done</button>
+          <div class="menu-list">
+            <button id="menu-download-btn" class="menu-list-item">
+              <span class="menu-list-item-content">
+                <span class="material-symbols-outlined">download</span>
+                <span>Install App (PWA)</span>
+              </span>
+            </button>
           </div>
         </div>
       </div>
+
+      <!-- Edit sheet drawer -->
+      <div id="sheet-overlay" class="sheet-overlay"></div>
+
+      <!-- Confirmation Modal -->
+      <div id="confirm-modal" class="confirm-modal">
+        <div class="confirm-modal-title">Change Day Type?</div>
+        <div class="confirm-modal-text" id="confirm-modal-msg">Are you sure you want to manually change the current day type?</div>
+        <div class="confirm-modal-actions">
+          <button class="btn btn-cancel" id="btn-modal-cancel">Cancel</button>
+          <button class="btn btn-confirm" id="btn-modal-confirm">Confirm</button>
+        </div>
+      </div>
+
+
 
       <!-- Adjust Supplement Sheet -->
       <div id="adjust-supplement-sheet" class="side-menu">
